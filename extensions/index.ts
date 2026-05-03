@@ -86,18 +86,31 @@ export default async function (pi: ExtensionAPI) {
   if (!env.BLENDER_MCP_HOST) env.BLENDER_MCP_HOST = "127.0.0.1";
   if (!env.BLENDER_MCP_PORT) env.BLENDER_MCP_PORT = "9876";
 
-  const transport = new StdioClientTransport({
-    command: "blender-mcp",
-    args: [],
-    env,
-  });
+  let client: Client | null = null;
 
-  const client = new Client(
-    { name: "pi-blender-mcp", version: "1.0.0" },
-    { capabilities: {} },
-  );
+  try {
+    const transport = new StdioClientTransport({
+      command: "blender-mcp",
+      args: [],
+      env,
+    });
 
-  await client.connect(transport);
+    client = new Client(
+      { name: "pi-blender-mcp", version: "1.0.0" },
+      { capabilities: {} },
+    );
+
+    await client.connect(transport);
+  } catch (err: any) {
+    // blender-mcp not available — degrade gracefully
+    if (pi.ui) {
+      pi.ui.notify(
+        `Blender MCP: server unavailable (${err.message ?? err.code ?? "unknown"}). Install with: pip install blender-mcp`,
+        "warn",
+      );
+    }
+    return;
+  }
 
   // --- Discover tools ---
   const { tools } = await client.listTools();
@@ -188,6 +201,7 @@ export default async function (pi: ExtensionAPI) {
 
   // --- Clean shutdown ---
   pi.on("session_shutdown", async () => {
+    if (!client) return;
     try {
       await client.close();
     } catch {
