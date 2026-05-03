@@ -143,58 +143,66 @@ export default async function (pi: ExtensionAPI) {
       async execute(_toolCallId, params, signal, onUpdate, _ctx) {
         onUpdate?.({ content: [{ type: "text", text: `Running ${tool.name}...` }] });
 
-        const result = await client.callTool(
-          { name: tool.name, arguments: params as Record<string, unknown> },
-          { signal } as any,
-        );
+        try {
+          const result = await client!.callTool(
+            { name: tool.name, arguments: params as Record<string, unknown> },
+            undefined,
+            { signal } as any,
+          );
 
-        const textParts: string[] = [];
-        const images: Array<{ type: "image"; data: string; mimeType: string }> = [];
+          const textParts: string[] = [];
+          const images: Array<{ type: "image"; data: string; mimeType: string }> = [];
 
-        for (const item of result.content as any[]) {
-          switch (item.type) {
-            case "text":
-              textParts.push(item.text);
-              break;
-            case "image": {
-              // MCP images: { type: "image", data: base64, mimeType: "image/png" }
-              images.push({
-                type: "image",
-                data: item.data,
-                mimeType: item.mimeType ?? "image/png",
-              });
-              break;
+          for (const item of result.content as any[]) {
+            switch (item.type) {
+              case "text":
+                textParts.push(item.text);
+                break;
+              case "image": {
+                // MCP images: { type: "image", data: base64, mimeType: "image/png" }
+                images.push({
+                  type: "image",
+                  data: item.data,
+                  mimeType: item.mimeType ?? "image/png",
+                });
+                break;
+              }
+              case "resource":
+                textParts.push(`[resource: ${item.resource?.uri ?? "unknown"}]`);
+                break;
+              default:
+                textParts.push(`[${item.type}]`);
             }
-            case "resource":
-              textParts.push(`[resource: ${item.resource?.uri ?? "unknown"}]`);
-              break;
-            default:
-              textParts.push(`[${item.type}]`);
           }
-        }
 
-        const text = textParts.join("\n") || "(completed)";
+          const text = textParts.join("\n") || "(completed)";
 
-        // Build pi content array. Pi renders images inline in the TUI.
-        const content: any[] = [{ type: "text", text }];
-        for (const img of images) {
-          content.push({
-            type: "image",
-            source: {
-              type: "base64",
-              mediaType: img.mimeType,
-              data: img.data,
+          // Build pi content array. Pi renders images inline in the TUI.
+          const content: any[] = [{ type: "text", text }];
+          for (const img of images) {
+            content.push({
+              type: "image",
+              source: {
+                type: "base64",
+                mediaType: img.mimeType,
+                data: img.data,
+              },
+            });
+          }
+
+          return {
+            content,
+            details: {
+              toolName: tool.name,
+              isError: result.isError ?? false,
             },
-          });
+          };
+        } catch (err: any) {
+          return {
+            content: [{ type: "text", text: `Error: ${err.message ?? String(err)}` }],
+            details: { toolName: tool.name, isError: true },
+          };
         }
-
-        return {
-          content,
-          details: {
-            toolName: tool.name,
-            isError: result.isError ?? false,
-          },
-        };
       },
     });
   }
