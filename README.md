@@ -15,14 +15,25 @@ Pi extension that connects to [blender-mcp](https://projects.blender.org/lab/ble
 
 ## Install
 
+### Project-local (recommended)
+
+Install only for your Blender project — won't affect other workspaces:
+
 ```bash
-pi install npm:pi-blender-mcp
+cd /path/to/your-blender-project
+pi install git:github.com/Changhochien/pi-blender-mcp -l
 ```
 
-Or from git:
+This writes to `.pi/settings.json` in that directory. Team members who clone the project get it auto-installed on their first pi startup.
+
+### Global
+
+Available in every project:
 
 ```bash
-pi install git:github.com/changtom/pi-blender-mcp
+pi install npm:pi-blender-mcp
+# or from git:
+pi install git:github.com/Changhochien/pi-blender-mcp
 ```
 
 ## Usage
