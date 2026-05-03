@@ -88,24 +88,35 @@ export default async function (pi: ExtensionAPI) {
 
   let client: Client | null = null;
 
-  try {
-    const transport = new StdioClientTransport({
-      command: "blender-mcp",
-      args: [],
-      env,
-    });
+  // Try to connect — first with `blender-mcp` on PATH, then via `uvx`
+  async function tryConnect(command: string, args: string[]): Promise<Client | null> {
+    try {
+      const transport = new StdioClientTransport({
+        command,
+        args,
+        env,
+      });
+      const c = new Client(
+        { name: "pi-blender-mcp", version: "1.0.0" },
+        { capabilities: {} },
+      );
+      await c.connect(transport);
+      return c;
+    } catch {
+      return null;
+    }
+  }
 
-    client = new Client(
-      { name: "pi-blender-mcp", version: "1.0.0" },
-      { capabilities: {} },
-    );
+  client = await tryConnect("blender-mcp", []);
+  if (!client) {
+    client = await tryConnect("uvx", ["blender-mcp"]);
+  }
 
-    await client.connect(transport);
-  } catch (err: any) {
+  if (!client) {
     // blender-mcp not available — degrade gracefully
     if (pi.ui) {
       pi.ui.notify(
-        `Blender MCP: server unavailable (${err.message ?? err.code ?? "unknown"}). Install with: pip install blender-mcp`,
+        "Blender MCP: server unavailable. Install with: uv tool install git+https://projects.blender.org/lab/blender_mcp.git --directory mcp",
         "warn",
       );
     }

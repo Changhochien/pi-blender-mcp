@@ -6,9 +6,16 @@ Pi extension that connects to [blender-mcp](https://projects.blender.org/lab/ble
 
 1. **Blender** — Install [Blender](https://www.blender.org/) (4.0+ recommended)
 2. **Blender MCP add-on** — Install the add-on from `addon/blender_mcp_addon/` in the [blender-mcp repo](https://projects.blender.org/lab/blender_mcp). Enable it in Blender's preferences (auto-start recommended).
-3. **Python MCP server** — Install the `blender-mcp` Python package:
+3. **Python MCP server** — Install the `blender-mcp` Python package (requires [uv](https://docs.astral.sh/uv/)):
    ```bash
-   pip install blender-mcp
+   # Clone blender-mcp and install from source:
+   git clone https://projects.blender.org/lab/blender_mcp.git
+   cd blender_mcp/mcp
+   uv pip install -e .
+   ```
+   Or install globally with `uv tool install`:
+   ```bash
+   uv tool install git+https://projects.blender.org/lab/blender_mcp.git --directory mcp
    ```
    Ensure `blender-mcp` is on your PATH.
 4. **Start Blender** — With the add-on enabled and the server running.
